@@ -54,6 +54,29 @@ Aplicativo mobile completo para controle de finanças pessoais desenvolvido com 
 
 ## 📸 Telas do Aplicativo
 
+### 🔐 Tela de Login
+Interface limpa para autenticação de usuários.
+
+### 📝 Tela de Cadastro
+Formulário de criação de nova conta com validações.
+
+### 📊 Dashboard
+Visão geral das finanças com gráficos e métricas.
+
+### 💰 Cadastro de Receitas
+Formulário otimizado para registro de entradas financeiras.
+
+### 💸 Cadastro de Despesas
+Interface completa para registro de gastos com categorias.
+
+### 🗂️ Gestão de Categorias
+CRUD completo para categorias personalizadas.
+
+### 📋 Lista de Transações
+Visualização filtrada de todas as movimentações.
+
+## Prints Do Aplicativo
+
 <img width="352" height="664" alt="image" src="https://github.com/user-attachments/assets/edd71293-ab54-41a7-aa3f-0aca72d8814d" />
 <img width="393" height="848" alt="image" src="https://github.com/user-attachments/assets/b9500833-fe23-4e92-aaaf-a8910971356d" />
 
