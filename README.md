@@ -60,7 +60,6 @@ Aplicativo mobile completo para controle de finanças pessoais desenvolvido com 
 <img width="393" height="695" alt="image" src="https://github.com/user-attachments/assets/b3f4cddb-4927-4a9f-98b4-52d4710d499c" />
 <img width="384" height="792" alt="image" src="https://github.com/user-attachments/assets/86c62dc4-0c44-4c6e-a099-91a2d81d854d" />
 <img width="388" height="864" alt="image" src="https://github.com/user-attachments/assets/7e7e7d33-5537-45c4-88dd-b5aee32895f8" />
-<img width="388" height="770" alt="image" src="https://github.com/user-attachments/assets/eb4df33a-4932-4dfd-95d5-3011beb05623" />
 
 ---
 
