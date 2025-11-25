@@ -27,7 +27,7 @@ export default function ExpensesScreen({ navigation }) {
 
   // CATEGORIAS PADRÃO COMO FALLBACK
   const defaultCategories = [
-    'Alimentação', 'Transporte', 'Moradia', 'Saúde', 
+    'Alimentação', 'Transporte', 'Moradia', 'Saúde',
     'Educação', 'Lazer', 'Compras', 'Outros'
   ];
 
@@ -47,7 +47,6 @@ export default function ExpensesScreen({ navigation }) {
         console.log('Erro ao carregar categorias, usando padrão:', error);
         setCategories(defaultCategories.map(name => ({ id: name, name })));
       } else {
-        // Se não há categorias, usa as padrão
         if (data.length === 0) {
           setCategories(defaultCategories.map(name => ({ id: name, name })));
         } else {
@@ -60,9 +59,56 @@ export default function ExpensesScreen({ navigation }) {
     }
   };
 
+  // helper para tipo de conteúdo
+  const getContentType = (ext) => {
+    const e = ext?.toLowerCase();
+    if (e === 'png') return 'image/png';
+    if (e === 'jpg' || e === 'jpeg') return 'image/jpeg';
+    if (e === 'heic') return 'image/heic';
+    return 'image/jpeg';
+  };
+
+  // upload do comprovante para Supabase Storage (bucket "receipts")
+  const uploadReceiptToSupabase = async (uri) => {
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      const uriParts = uri.split('/');
+      const rawName = uriParts[uriParts.length - 1].split('?')[0];
+      const ext = rawName.split('.').pop();
+      const fileName = `${user.id}_${Date.now()}_${rawName}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase
+        .storage
+        .from('receipts')
+        .upload(filePath, blob, { contentType: blob.type || getContentType(ext) });
+
+      if (uploadError) {
+        // se arquivo já existir, pode tentar nome diferente ou falhar
+        throw uploadError;
+      }
+
+      // obter URL pública
+      const { data: publicData, error: publicError } = supabase
+        .storage
+        .from('receipts')
+        .getPublicUrl(filePath);
+
+      if (publicError) throw publicError;
+
+      // publicData.publicUrl (v1/v2)
+      return publicData?.publicUrl ?? publicData?.public_url ?? null;
+    } catch (err) {
+      console.error('Erro upload comprovante:', err);
+      throw err;
+    }
+  };
+
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+
     if (status !== 'granted') {
       Alert.alert('Permissão necessária', 'Precisamos de acesso à galeria para anexar comprovantes.');
       return;
@@ -82,7 +128,7 @@ export default function ExpensesScreen({ navigation }) {
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    
+
     if (status !== 'granted') {
       Alert.alert('Permissão necessária', 'Precisamos de acesso à câmera para tirar fotos.');
       return;
@@ -105,7 +151,6 @@ export default function ExpensesScreen({ navigation }) {
       return;
     }
 
-    // Validação do valor
     const amountValue = parseFloat(amount.replace(',', '.'));
     if (isNaN(amountValue) || amountValue <= 0) {
       Alert.alert('Erro', 'Por favor, insira um valor válido maior que zero');
@@ -114,6 +159,17 @@ export default function ExpensesScreen({ navigation }) {
 
     setLoading(true);
     try {
+      let receiptUrl = null;
+      if (receipt) {
+        try {
+          receiptUrl = await uploadReceiptToSupabase(receipt);
+        } catch (uploadErr) {
+          Alert.alert('Erro', 'Falha ao enviar comprovante. Tente novamente.');
+          setLoading(false);
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from('transactions')
         .insert({
@@ -123,14 +179,14 @@ export default function ExpensesScreen({ navigation }) {
           description,
           category,
           date: date.toISOString().split('T')[0],
-          receipt_url: receipt, // Por enquanto sem upload
+          receipt_url: receiptUrl, // agora armazena URL pública do Supabase
         });
 
       if (error) throw error;
 
       Alert.alert('Sucesso', 'Despesa cadastrada com sucesso!');
       navigation.goBack();
-      
+
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível cadastrar a despesa');
       console.error(error);
@@ -142,7 +198,7 @@ export default function ExpensesScreen({ navigation }) {
   const handleAmountChange = (text) => {
     const cleanedText = text.replace(/[^0-9,.]/g, '');
     const formattedText = cleanedText.replace(',', '.');
-    
+
     if (formattedText === '' || !isNaN(formattedText)) {
       setAmount(cleanedText);
     }
@@ -197,9 +253,9 @@ export default function ExpensesScreen({ navigation }) {
           <Text style={styles.subLabel}>
             {categories.length === 0 ? 'Carregando categorias...' : 'Selecione uma categoria:'}
           </Text>
-          
-          <ScrollView 
-            horizontal 
+
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.categoriesScroll}
           >
@@ -224,7 +280,6 @@ export default function ExpensesScreen({ navigation }) {
             ))}
           </ScrollView>
 
-          {/* Mostra a categoria selecionada */}
           {category ? (
             <Text style={styles.selectedCategory}>
               Categoria selecionada: <Text style={styles.selectedCategoryName}>{category}</Text>
@@ -239,22 +294,22 @@ export default function ExpensesScreen({ navigation }) {
         {/* SEÇÃO DE COMPROVANTE (OPCIONAL) */}
         <View style={styles.receiptSection}>
           <Text style={styles.label}>Comprovante (opcional):</Text>
-          
+
           {receipt && (
             <Image source={{ uri: receipt }} style={styles.receiptImage} />
           )}
-          
+
           <View style={styles.receiptButtons}>
             <TouchableOpacity style={styles.receiptButton} onPress={pickImage}>
               <Text style={styles.receiptButtonText}>📁 Galeria</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={styles.receiptButton} onPress={takePhoto}>
               <Text style={styles.receiptButtonText}>📷 Câmera</Text>
             </TouchableOpacity>
-            
+
             {receipt && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.receiptButton, styles.removeButton]}
                 onPress={() => setReceipt(null)}
               >
